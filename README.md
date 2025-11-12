@@ -7,7 +7,7 @@ A health-based emergency care navigation system for Midtown Atlanta, helping use
 - **Three Decision Modes**: Stay (Static), Move (Active), Hybrid (Adaptive)
 - **Real-time Facility Matching**: Like a "dating app" for emergency care - matching users with facilities based on capacity, insurance, proximity
 - **Congestion Awareness**: Traffic and facility capacity visualization
-- **Google Maps Integration**: Route planning and facility visualization for Midtown Atlanta
+- **Interactive Mapping**: Leaflet.js + OpenStreetMap for route planning and facility visualization (free, no API key required!)
 
 ## Architecture Ideology
 
@@ -26,7 +26,7 @@ EVAC+
 
 ### System Components (from architecture draft)
 - **DecisionEngine**: Analyzes user profile + facility data → recommends Stay/Move/Hybrid
-- **RoutingService**: Google Maps API integration for routes + ETA
+- **RoutingService**: OpenStreetMap integration for routes + ETA (free alternative)
 - **ShelterService**: Urgent care & ER facility directory
 - **NotificationService**: Real-time alerts (future)
 
@@ -34,9 +34,9 @@ EVAC+
 ### Prerequisites/Installations
 - Node.js 18+ 
 - npm or yarn
-- Google Maps API key (work in progress)
 - Git installed
 - GitHub Enterprise (gatech.edu) account with Personal Access Token (PAT)
+- **NO API KEYS REQUIRED** - Using free OpenStreetMap!
 
 ---
 
@@ -105,51 +105,38 @@ cd ../frontend
 npm install
 ```
 
-### Step 4: Get Google Maps API Key
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or select existing)
-3. Enable these APIs:
-   - Maps JavaScript API
-   - Directions API
-   - Places API
-4. Create credentials → API Key
-5. Copy your API key
-
-### Step 5: Configuration
+### Step 4: Configuration
 
 **Backend Configuration:**
 
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the `backend/` directory
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Edit `backend/.env` and add your API key:
+The `.env` file should contain:
 ```env
-GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
 PORT=3001
 NODE_ENV=development
 ```
 
 **Frontend Configuration:**
 
-Create a `.env` file in the `frontend/` directory:
+Create a `.env` file in the `frontend/` directory (optional):
 ```bash
 cd ../frontend
 cp .env.example .env
 ```
 
-Edit `frontend/.env` and add your API key:
+The `.env` file should contain:
 ```env
-REACT_APP_GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
 REACT_APP_API_URL=http://localhost:3001
 ```
 
-> **Important**: NEVER commit `.env` files to GitHub. They're already in `.gitignore`.
+> **Note**: We're using Leaflet.js with OpenStreetMap (completely free, no API keys required!) instead of Google Maps. This means you can start building immediately without any setup hassle or cost concerns.
 
-### Step 6: Running the Application
+### Step 5: Running the Application
 
 Open two terminal windows:
 
@@ -553,8 +540,19 @@ The system is designed to ensure equitable access across:
 
 ## Technology Stack
 
-- **Frontend**: React, Google Maps JavaScript API
+- **Frontend**: React, Leaflet.js, React-Leaflet
+- **Mapping**: OpenStreetMap (free, open-source alternative to Google Maps)
 - **Backend**: Node.js, Express
 - **Database**: JSON files (MVP), PostgreSQL (future)
-- **APIs**: Google Maps Directions API, Google Maps Places API
 - **Deployment**: TBD (Vercel/Netlify for frontend, Heroku/Railway for backend)
+
+### Why OpenStreetMap Instead of Google Maps?
+
+For this MVP, we're using **Leaflet.js** with **OpenStreetMap** because:
+- **Zero cost** - No credit card or API keys required
+- **Perfect for demos** - Professional-looking interactive maps
+- **Open source** - Community-driven, always free
+- **Full features** - Markers, popups, custom overlays, routing
+- **Easy to upgrade** - Can switch to Google Maps later if needed
+
+This choice allows us to focus on building core functionality without budget constraints or API setup hassle.

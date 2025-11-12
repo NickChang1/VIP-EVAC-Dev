@@ -10,8 +10,8 @@ node_modules/
 /build
 /dist
 
-# Environment variables
-.env
+# Environment variables (commented out since we have no API keys)
+# .env
 .env.local
 .env.development.local
 .env.test.local
