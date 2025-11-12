@@ -7,7 +7,7 @@ A health-based emergency care navigation system for Midtown Atlanta, helping use
 - **Three Decision Modes**: Stay (Static), Move (Active), Hybrid (Adaptive)
 - **Real-time Facility Matching**: Like a "dating app" for emergency care - matching users with facilities based on capacity, insurance, proximity
 - **Congestion Awareness**: Traffic and facility capacity visualization
-- **Interactive Mapping**: Leaflet.js + OpenStreetMap for route planning and facility visualization (free, no API key required!)
+- **Interactive Mapping**: Leaflet.js + OpenStreetMap for route planning and facility visualization
 
 ## Architecture Ideology
 
@@ -81,7 +81,7 @@ git config --global user.email "nchang41@gatech.edu"
 
 After the first successful push, macOS Keychain will remember your credentials.
 
-> **Need a PAT?** Generate one at: https://github.gatech.edu/settings/tokens  
+> **Generate a PAT Here:** https://github.gatech.edu/settings/tokens  
 > Required scopes: `repo` (Full control of private repositories)
 
 **Troubleshooting Authentication:**
@@ -134,7 +134,7 @@ The `.env` file should contain:
 REACT_APP_API_URL=http://localhost:3001
 ```
 
-> **Note**: We're using Leaflet.js with OpenStreetMap (completely free, no API keys required!) instead of Google Maps. This means you can start building immediately without any setup hassle or cost concerns.
+> **Note**: We're using Leaflet.js with OpenStreetMap (completely free, and open sourced) instead of Google Maps. This means you can start building immediately without any setup hassle or cost concerns.
 
 ### Step 5: Running the Application
 
@@ -261,14 +261,14 @@ git commit -m "Add user profile form component"
 ```
 
 **Good commit messages:**
-- ✅ "Add Google Maps integration to frontend"
-- ✅ "Fix decision engine logic for Stay recommendation"
-- ✅ "Update README with setup instructions"
+- "Add Google Maps integration to frontend"
+- "Fix decision engine logic for Stay recommendation"
+- "Update README with setup instructions"
 
 **Bad commit messages:**
-- ❌ "update"
-- ❌ "fixed stuff"
-- ❌ "asdf"
+- "update"
+- "fixed stuff"
+- "asdf"
 
 #### Step 6: Push Your Branch to GitHub
 
