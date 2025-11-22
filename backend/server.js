@@ -58,6 +58,10 @@ app.get('/api/health', (req, res) => {
  * @returns {number} Current hour (0-23)
  */
 const getAtlantaHour = () => {
+  // If running in simulation mode with overridden hour, use that
+  if (global.getAtlantaHour) {
+    return global.getAtlantaHour();
+  }
   return new Date().getHours();
 };
 
@@ -71,10 +75,11 @@ const getAtlantaHour = () => {
  * - Night (midnight-6am): Low traffic, fewer patients
  * 
  * @param {string} facilityType - 'ER' or 'Urgent Care'
+ * @param {number} specifiedHour - Optional hour to use instead of current time
  * @returns {number} Multiplier for base wait time (0.5 = half wait, 2.0 = double wait)
  */
-const getTimeMultiplier = (facilityType) => {
-  const hour = getAtlantaHour();
+const getTimeMultiplier = (facilityType, specifiedHour = null) => {
+  const hour = specifiedHour !== null ? specifiedHour : getAtlantaHour();
   
   if (facilityType === 'ER') {
     // ERs are busiest during evening rush and nights (accidents, emergencies)
@@ -125,7 +130,7 @@ const baseFacilities = [
     id: 1,
     name: 'Grady Memorial Hospital',
     type: 'ER',
-    position: { lat: 33.7557, lng: -84.3816 },
+    position: { lat: 33.752222, lng: -84.382392 },  // 33° 45' 8.00" N, -84° 22' 56.61" W
     baseWaitTime: 45,  // Base wait time - will be adjusted by time of day
     insurance: ['All'],
     specialties: ['Emergency', 'Trauma', 'Cardiac'],
@@ -153,9 +158,9 @@ const baseFacilities = [
   },
   {
     id: 4,
-    name: 'WellStreet Urgent Care - Midtown',
+    name: 'Piedmont Urgent Care - Midtown',
     type: 'Urgent Care',
-    position: { lat: 33.7712, lng: -84.3850 },
+    position: { lat: 33.774007, lng: -84.358614 },
     baseWaitTime: 15,
     insurance: ['Most major'],
     specialties: ['Urgent Care', 'X-Ray'],
@@ -226,19 +231,49 @@ app.get('/api/facilities', (req, res) => {
   // Check if simulated hour is provided
   const simulatedHour = req.query.simulatedHour ? parseInt(req.query.simulatedHour) : null;
   
-  // Override getAtlantaHour if simulating
-  const originalGetAtlantaHour = getAtlantaHour;
+  // Temporarily override getAtlantaHour for simulation
+  let facilities, trafficLevel;
+  
   if (simulatedHour !== null && simulatedHour >= 0 && simulatedHour <= 23) {
-    // Temporarily override the hour function
-    global.getAtlantaHour = () => simulatedHour;
-  }
-  
-  const facilities = getFacilitiesWithCurrentStatus();
-  const trafficLevel = getTrafficLevel();
-  
-  // Restore original function
-  if (simulatedHour !== null) {
-    global.getAtlantaHour = originalGetAtlantaHour;
+    // Create a temporary override
+    const originalHour = new Date().getHours();
+    
+    // Monkey patch for this request only
+    const tempGetHour = () => simulatedHour;
+    
+    // Calculate facilities with simulated hour
+    facilities = baseFacilities.map(facility => {
+      const multiplier = getTimeMultiplier(facility.type, simulatedHour);
+      const currentWaitTime = Math.round(facility.baseWaitTime * multiplier);
+      
+      let status = 'Open';
+      if (facility.type === 'Urgent Care' && (simulatedHour < 8 || simulatedHour >= 20)) {
+        status = 'Closed';
+      }
+      
+      return {
+        ...facility,
+        currentWaitTime,
+        waitTimeDisplay: currentWaitTime > 0 && status === 'Open' ? `${currentWaitTime} min` : 'Closed',
+        status,
+        capacity: currentWaitTime < 20 ? 'High' : currentWaitTime < 40 ? 'Medium' : 'Low'
+      };
+    });
+    
+    // Calculate traffic for simulated hour
+    if ((simulatedHour >= 7 && simulatedHour < 10) || (simulatedHour >= 16 && simulatedHour < 19)) {
+      trafficLevel = 'severe';
+    } else if ((simulatedHour >= 6 && simulatedHour < 7) || (simulatedHour >= 10 && simulatedHour < 12) || (simulatedHour >= 14 && simulatedHour < 16)) {
+      trafficLevel = 'heavy';
+    } else if (simulatedHour >= 12 && simulatedHour < 14) {
+      trafficLevel = 'moderate';
+    } else {
+      trafficLevel = 'low';
+    }
+  } else {
+    // Use current time
+    facilities = getFacilitiesWithCurrentStatus();
+    trafficLevel = getTrafficLevel();
   }
   
   res.json({

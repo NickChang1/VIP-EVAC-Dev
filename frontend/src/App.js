@@ -73,7 +73,9 @@ function App() {
   // ===== MAP CONFIGURATION =====
   // User location: Klaus Advanced Computing Building, Georgia Tech
   // 266 Ferst Dr NW, Atlanta, GA 30332
-  const userLocation = [33.7772, -84.3964];
+  // Latitude: 33° 46' 39.09" N = 33.777525°
+  // Longitude: -84° 23' 46.06" W = -84.396128°
+  const userLocation = [33.777525, -84.396128];
   
   // Center coordinates for Midtown Atlanta (Latitude, Longitude)
   // This ensures the map initially displays the Midtown area
@@ -528,16 +530,26 @@ function App() {
               pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.2 }}
             />
 
-            {/* User location marker */}
+            {/* Profile location marker */}
             <Circle
               center={userLocation}
               radius={50}
-              pathOptions={{ color: '#667eea', fillColor: '#667eea', fillOpacity: 0.6, weight: 3 }}
+              pathOptions={{ color: '#2b8a3e', fillColor: '#51cf66', fillOpacity: 0.6, weight: 3 }}
             />
-            <Marker position={userLocation}>
+            <Marker 
+              position={userLocation}
+              icon={new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+              })}
+            >
               <Popup>
                 <div style={{ minWidth: '180px' }}>
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Your Location</h3>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#2b8a3e' }}>Profile Location</h3>
                   <p style={{ margin: '5px 0', fontSize: '13px' }}>Klaus Building, Georgia Tech</p>
                   <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>266 Ferst Dr NW</p>
                 </div>

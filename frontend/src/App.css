@@ -223,6 +223,16 @@
   color: #666;
 }
 
+.profile-display .location-info {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #e7f5ff;
+  border-left: 3px solid #51cf66;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #2b8a3e;
+}
+
 .location-info {
   margin-top: 0.5rem !important;
   padding-top: 0.5rem;
