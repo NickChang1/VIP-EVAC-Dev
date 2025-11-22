@@ -204,6 +204,30 @@
   font-style: italic;
 }
 
+.current-conditions {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  border: 2px solid #ffc107;
+}
+
+.current-conditions span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.traffic-dot {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
 .profile-display {
   margin-bottom: 1.5rem;
   padding: 1rem;

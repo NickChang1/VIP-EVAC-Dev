@@ -237,7 +237,11 @@ function App() {
             position: f.position.lat ? [f.position.lat, f.position.lng] : f.position
           }));
           setFacilities(facilitiesWithArrayPos);
-          setTrafficLevel(data.trafficLevel || 'moderate');
+          
+          // Update traffic level from backend
+          const newTrafficLevel = data.trafficLevel || 'moderate';
+          setTrafficLevel(newTrafficLevel);
+          console.log('Updated traffic level:', newTrafficLevel, 'for hour:', data.simulatedHour || 'current');
         }
       })
       .catch(err => console.error('Failed to fetch facilities:', err));
@@ -258,7 +262,10 @@ function App() {
               position: f.position.lat ? [f.position.lat, f.position.lng] : f.position
             }));
             setFacilities(facilitiesWithArrayPos);
-            setTrafficLevel(data.trafficLevel || 'moderate');
+            
+            // Update traffic level
+            const newTrafficLevel = data.trafficLevel || 'moderate';
+            setTrafficLevel(newTrafficLevel);
           }
         })
         .catch(err => console.error('Failed to refresh facilities:', err));
@@ -389,7 +396,11 @@ function App() {
               <label><strong>Time of Day Simulator:</strong></label>
               <select 
                 value={simulatedHour === null ? 'current' : simulatedHour} 
-                onChange={(e) => setSimulatedHour(e.target.value === 'current' ? null : parseInt(e.target.value))}
+                onChange={(e) => {
+                  const newHour = e.target.value === 'current' ? null : parseInt(e.target.value);
+                  setSimulatedHour(newHour);
+                  console.log('Time changed to:', newHour === null ? 'current' : `${newHour}:00`);
+                }}
                 className="time-selector"
               >
                 <option value="current">Current Time (Real)</option>
@@ -403,6 +414,10 @@ function App() {
                 <option value="2">2 AM - Late Night</option>
               </select>
               <p className="simulator-note">See how recommendations change throughout the day</p>
+              <div className="current-conditions">
+                <span><strong>Simulated Time:</strong> {simulatedHour === null ? 'Current' : `${simulatedHour % 12 || 12}:00 ${simulatedHour >= 12 ? 'PM' : 'AM'}`}</span>
+                <span className="traffic-dot"><strong>Traffic:</strong> <span className={`traffic-${trafficLevel}`}>{trafficLevel.toUpperCase()}</span></span>
+              </div>
             </div>
             
             <div className="profile-display">
@@ -518,17 +533,47 @@ function App() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {/* Simulated congestion zones */}
-            <Circle
-              center={[33.7706, -84.3880]}
-              radius={500}
-              pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.2 }}
-            />
-            <Circle
-              center={[33.7850, -84.3750]}
-              radius={400}
-              pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.2 }}
-            />
+            {/* Traffic congestion zones - dynamically update based on traffic level */}
+            {trafficLevel === 'severe' && (
+              <>
+                <Circle
+                  center={[33.7706, -84.3880]}
+                  radius={800}
+                  pathOptions={{ color: '#ff6b6b', fillColor: '#ff6b6b', fillOpacity: 0.3, weight: 2 }}
+                />
+                <Circle
+                  center={[33.7850, -84.3750]}
+                  radius={700}
+                  pathOptions={{ color: '#ff6b6b', fillColor: '#ff6b6b', fillOpacity: 0.3, weight: 2 }}
+                />
+                <Circle
+                  center={[33.7650, -84.3800]}
+                  radius={600}
+                  pathOptions={{ color: '#ff6b6b', fillColor: '#ff6b6b', fillOpacity: 0.3, weight: 2 }}
+                />
+              </>
+            )}
+            {trafficLevel === 'heavy' && (
+              <>
+                <Circle
+                  center={[33.7706, -84.3880]}
+                  radius={600}
+                  pathOptions={{ color: '#ff8787', fillColor: '#ff8787', fillOpacity: 0.25, weight: 2 }}
+                />
+                <Circle
+                  center={[33.7850, -84.3750]}
+                  radius={500}
+                  pathOptions={{ color: '#ff8787', fillColor: '#ff8787', fillOpacity: 0.25, weight: 2 }}
+                />
+              </>
+            )}
+            {trafficLevel === 'moderate' && (
+              <Circle
+                center={[33.7706, -84.3880]}
+                radius={400}
+                pathOptions={{ color: '#ffa94d', fillColor: '#ffa94d', fillOpacity: 0.2, weight: 2 }}
+              />
+            )}
 
             {/* Profile location marker */}
             <Circle
