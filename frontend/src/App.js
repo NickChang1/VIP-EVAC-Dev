@@ -71,6 +71,10 @@ function App() {
   const [simulatedHour, setSimulatedHour] = useState(null);
 
   // ===== MAP CONFIGURATION =====
+  // User location: Klaus Advanced Computing Building, Georgia Tech
+  // 266 Ferst Dr NW, Atlanta, GA 30332
+  const userLocation = [33.7772, -84.3964];
+  
   // Center coordinates for Midtown Atlanta (Latitude, Longitude)
   // This ensures the map initially displays the Midtown area
   const midtownCenter = [33.7756, -84.3963];
@@ -134,17 +138,34 @@ function App() {
    * @returns {Object} - { time: number (minutes), distance: number (miles) }
    */
   const calculateTravelTime = (facilityPosition) => {
-    // User's approximate location (Midtown Atlanta center for demo)
-    const userLat = midtownCenter[0];
-    const userLng = midtownCenter[1];
+    // Safety check
+    if (!facilityPosition) {
+      return { time: 0, distance: '0.0' };
+    }
+    
+    // Handle both array [lat, lng] and object {lat, lng} formats
+    let facLat, facLng;
+    if (Array.isArray(facilityPosition)) {
+      facLat = facilityPosition[0];
+      facLng = facilityPosition[1];
+    } else if (facilityPosition.lat && facilityPosition.lng) {
+      facLat = facilityPosition.lat;
+      facLng = facilityPosition.lng;
+    } else {
+      return { time: 0, distance: '0.0' };
+    }
+    
+    // User's location: Klaus Advanced Computing Building, Georgia Tech
+    const userLat = userLocation[0];
+    const userLng = userLocation[1];
     
     // Haversine formula to calculate distance
     const R = 3959; // Earth's radius in miles
-    const dLat = (facilityPosition[0] - userLat) * Math.PI / 180;
-    const dLng = (facilityPosition[1] - userLng) * Math.PI / 180;
+    const dLat = (facLat - userLat) * Math.PI / 180;
+    const dLng = (facLng - userLng) * Math.PI / 180;
     const a = 
       Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(userLat * Math.PI / 180) * Math.cos(facilityPosition[0] * Math.PI / 180) *
+      Math.cos(userLat * Math.PI / 180) * Math.cos(facLat * Math.PI / 180) *
       Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     const distance = R * c; // Distance in miles
@@ -208,7 +229,12 @@ function App() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setFacilities(data.data);
+          // Convert position from {lat, lng} to [lat, lng] for Leaflet
+          const facilitiesWithArrayPos = data.data.map(f => ({
+            ...f,
+            position: f.position.lat ? [f.position.lat, f.position.lng] : f.position
+          }));
+          setFacilities(facilitiesWithArrayPos);
           setTrafficLevel(data.trafficLevel || 'moderate');
         }
       })
@@ -224,7 +250,12 @@ function App() {
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            setFacilities(data.data);
+            // Convert position from {lat, lng} to [lat, lng] for Leaflet
+            const facilitiesWithArrayPos = data.data.map(f => ({
+              ...f,
+              position: f.position.lat ? [f.position.lat, f.position.lng] : f.position
+            }));
+            setFacilities(facilitiesWithArrayPos);
             setTrafficLevel(data.trafficLevel || 'moderate');
           }
         })
@@ -250,6 +281,12 @@ function App() {
    * 5. Patient profile (single mother = cost-conscious, time-sensitive)
    */
   const handleGetRecommendation = () => {
+    // Check if facilities are loaded
+    if (!facilities || facilities.length === 0) {
+      alert('Loading facility data, please wait a moment and try again.');
+      return;
+    }
+    
     let result = {
       decision: '',      // The recommended action (Stay/Move)
       facility: null,    // Which facility to use
@@ -369,6 +406,7 @@ function App() {
             <div className="profile-display">
               <h3>Profile: Single Mother with Burn Injury</h3>
               <p>Age: 32 | Has child at home | Limited transportation</p>
+              <p className="location-info">Current Location: Klaus Building, Georgia Tech (266 Ferst Dr NW)</p>
             </div>
             
             <div className="severity-selector">
@@ -490,7 +528,23 @@ function App() {
               pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.2 }}
             />
 
-            {facilities.map(facility => (
+            {/* User location marker */}
+            <Circle
+              center={userLocation}
+              radius={50}
+              pathOptions={{ color: '#667eea', fillColor: '#667eea', fillOpacity: 0.6, weight: 3 }}
+            />
+            <Marker position={userLocation}>
+              <Popup>
+                <div style={{ minWidth: '180px' }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Your Location</h3>
+                  <p style={{ margin: '5px 0', fontSize: '13px' }}>Klaus Building, Georgia Tech</p>
+                  <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>266 Ferst Dr NW</p>
+                </div>
+              </Popup>
+            </Marker>
+
+            {facilities.length > 0 && facilities.map(facility => (
               <React.Fragment key={facility.id}>
                 {/* Capacity circle - size based on wait time */}
                 <Circle
@@ -514,7 +568,12 @@ function App() {
                       <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>{facility.name}</h3>
                       <p style={{ margin: '5px 0' }}><strong>Type:</strong> {facility.type}</p>
                       <p style={{ margin: '5px 0' }}><strong>Wait Time:</strong> {facility.waitTimeDisplay || `${facility.currentWaitTime} min`}</p>
-                      <p style={{ margin: '5px 0' }}><strong>Travel Time:</strong> ~{calculateTravelTime(facility.position).time} min ({calculateTravelTime(facility.position).distance} mi)</p>
+                      {(() => {
+                        const travel = calculateTravelTime(facility.position);
+                        return travel.time > 0 ? (
+                          <p style={{ margin: '5px 0' }}><strong>Travel Time:</strong> ~{travel.time} min ({travel.distance} mi)</p>
+                        ) : null;
+                      })()}
                       <p style={{ margin: '5px 0' }}><strong>Insurance:</strong> {facility.insurance?.join(', ')}</p>
                       <p style={{ margin: '5px 0' }}><strong>Status:</strong> <span style={{ color: facility.status === 'Open' ? 'green' : 'red' }}>{facility.status}</span></p>
                       {facility.hours && <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>{facility.hours}</p>}
