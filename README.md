@@ -145,7 +145,7 @@ Open two terminal windows:
 cd backend
 npm start
 ```
-You should see: `🚀 EVAC+ Backend API running on http://localhost:3001`
+You should see: `EVAC+ Backend API running on http://localhost:3001`
 
 **Terminal 2 - Frontend:**
 ```bash
