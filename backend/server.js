@@ -213,6 +213,9 @@ const getFacilitiesWithCurrentStatus = () => {
  * Wait times are calculated dynamically based on time of day
  * This creates realistic patterns without needing real-time APIs
  * 
+ * Query parameters:
+ * - simulatedHour (optional): Hour 0-23 to simulate specific time
+ * 
  * Response includes:
  * - Current wait times (adjusted for time of day)
  * - Open/closed status
@@ -220,15 +223,33 @@ const getFacilitiesWithCurrentStatus = () => {
  * - Time of last update
  */
 app.get('/api/facilities', (req, res) => {
+  // Check if simulated hour is provided
+  const simulatedHour = req.query.simulatedHour ? parseInt(req.query.simulatedHour) : null;
+  
+  // Override getAtlantaHour if simulating
+  const originalGetAtlantaHour = getAtlantaHour;
+  if (simulatedHour !== null && simulatedHour >= 0 && simulatedHour <= 23) {
+    // Temporarily override the hour function
+    global.getAtlantaHour = () => simulatedHour;
+  }
+  
   const facilities = getFacilitiesWithCurrentStatus();
   const trafficLevel = getTrafficLevel();
+  
+  // Restore original function
+  if (simulatedHour !== null) {
+    global.getAtlantaHour = originalGetAtlantaHour;
+  }
   
   res.json({
     success: true,
     data: facilities,
-    trafficLevel,  // Current traffic conditions
+    trafficLevel,  // Current or simulated traffic conditions
     lastUpdated: new Date().toISOString(),
-    simulationNote: 'Wait times and traffic based on time-of-day simulation'
+    simulatedHour: simulatedHour,
+    simulationNote: simulatedHour !== null 
+      ? `Simulating ${simulatedHour}:00 (${simulatedHour % 12 || 12}${simulatedHour >= 12 ? 'PM' : 'AM'})`
+      : 'Using current time'
   });
 });
 

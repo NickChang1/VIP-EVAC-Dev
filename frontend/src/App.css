@@ -22,6 +22,14 @@
   opacity: 0.95;
 }
 
+.header-badges {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .status-badge {
   display: inline-block;
   padding: 0.5rem 1rem;
@@ -29,6 +37,39 @@
   border-radius: 20px;
   backdrop-filter: blur(10px);
   font-size: 0.9rem;
+}
+
+.traffic-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 2px solid;
+}
+
+.traffic-badge.traffic-low {
+  background: rgba(81, 207, 102, 0.2);
+  border-color: #51cf66;
+  color: #2b8a3e;
+}
+
+.traffic-badge.traffic-moderate {
+  background: rgba(255, 169, 77, 0.2);
+  border-color: #ffa94d;
+  color: #d9480f;
+}
+
+.traffic-badge.traffic-heavy {
+  background: rgba(255, 135, 135, 0.2);
+  border-color: #ff8787;
+  color: #c92a2a;
+}
+
+.traffic-badge.traffic-severe {
+  background: rgba(255, 107, 107, 0.3);
+  border-color: #ff6b6b;
+  color: #c92a2a;
 }
 
 .App-main {
@@ -118,6 +159,49 @@
   padding: 1.5rem;
   border-radius: 8px;
   margin-top: 1rem;
+}
+
+.time-simulator {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff9db;
+  border-radius: 6px;
+  border-left: 4px solid #ffc107;
+}
+
+.time-simulator label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.time-selector {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #ffc107;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.time-selector:hover {
+  border-color: #ff9800;
+}
+
+.time-selector:focus {
+  outline: none;
+  border-color: #ff9800;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+}
+
+.simulator-note {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+  color: #856404;
+  font-style: italic;
 }
 
 .profile-display {
