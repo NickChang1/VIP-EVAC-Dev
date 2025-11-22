@@ -113,6 +113,273 @@
   margin: 0.25rem 0;
 }
 
+.input-panel {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.profile-display {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  border-left: 4px solid #667eea;
+}
+
+.profile-display h3 {
+  color: #667eea;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.profile-display p {
+  margin: 0;
+  color: #666;
+}
+
+.severity-selector {
+  margin-bottom: 1.5rem;
+}
+
+.severity-selector label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.severity-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.severity-btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.severity-btn:hover {
+  border-color: #667eea;
+  background: #f0f3ff;
+}
+
+.severity-btn.active {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}
+
+.recommend-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.recommend-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.recommendation-result {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #e7f5ff;
+  border-radius: 8px;
+  border-left: 4px solid #4dabf7;
+}
+
+.recommendation-result h3 {
+  margin: 0 0 1rem 0;
+  color: #1864ab;
+  font-size: 1.3rem;
+}
+
+.facility-recommendation {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.facility-recommendation h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.facility-recommendation p {
+  margin: 0.25rem 0;
+  color: #666;
+}
+
+.reasoning {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.reasoning strong {
+  color: #333;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.reasoning ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.reasoning li {
+  color: #555;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.map-legend {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.map-legend h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+}
+
+.legend-marker {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.legend-marker.red {
+  background: #ff6b6b;
+}
+
+.legend-marker.blue {
+  background: #4dabf7;
+}
+
+.legend-marker.orange {
+  background: #ffa94d;
+}
+
+.legend-circles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.legend-circle {
+  border-radius: 50%;
+  border: 2px solid #667eea;
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.legend-circle.large {
+  width: 30px;
+  height: 30px;
+}
+
+.legend-circle.medium {
+  width: 20px;
+  height: 20px;
+}
+
+.legend-circle.small {
+  width: 12px;
+  height: 12px;
+}
+
+.legend-item strong {
+  display: block;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.legend-item p {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.legend-tip {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #fff3bf;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+  color: #856404;
+}
+
+.legend-tip strong {
+  color: #856404;
+}
+
+.traffic-low {
+  color: #51cf66;
+  font-weight: 600;
+}
+
+.traffic-moderate {
+  color: #ffa94d;
+  font-weight: 600;
+}
+
+.traffic-heavy {
+  color: #ff8787;
+  font-weight: 600;
+}
+
+.traffic-severe {
+  color: #ff6b6b;
+  font-weight: 600;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 @media (max-width: 768px) {
   .App-header h1 {
     font-size: 2.5rem;
@@ -120,6 +387,10 @@
   
   .decision-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .severity-buttons {
+    flex-direction: column;
   }
   
   .App-main {
