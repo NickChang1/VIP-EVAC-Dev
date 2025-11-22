@@ -67,8 +67,8 @@ function App() {
   // Current traffic level (low, moderate, heavy, severe)
   const [trafficLevel, setTrafficLevel] = useState('moderate');
   
-  // Simulated time of day (null = use real time, or set specific hour 0-23)
-  const [simulatedHour, setSimulatedHour] = useState(null);
+  // Simulated time of day (defaults to current hour)
+  const [simulatedHour, setSimulatedHour] = useState(new Date().getHours());
 
   // ===== MAP CONFIGURATION =====
   // User location: Klaus Advanced Computing Building, Georgia Tech
@@ -175,8 +175,8 @@ function App() {
     // Base speed (assuming car travel in city)
     let speed = 25; // mph base speed in city
     
-    // Use simulated traffic if set, otherwise use current traffic
-    const currentTraffic = simulatedHour !== null ? getTrafficForHour(simulatedHour) : trafficLevel;
+    // Use simulated traffic based on selected hour
+    const currentTraffic = getTrafficForHour(simulatedHour);
     
     // Adjust speed based on traffic level
     switch(currentTraffic) {
@@ -223,9 +223,7 @@ function App() {
       .catch(err => setBackendStatus('Backend not running'));
     
     // Fetch facilities with dynamic wait times
-    const fetchUrl = simulatedHour !== null 
-      ? `${apiUrl}/api/facilities?simulatedHour=${simulatedHour}`
-      : `${apiUrl}/api/facilities`;
+    const fetchUrl = `${apiUrl}/api/facilities?simulatedHour=${simulatedHour}`;
     
     fetch(fetchUrl)
       .then(res => res.json())
@@ -248,9 +246,7 @@ function App() {
     
     // Refresh facilities every 60 seconds to show time-based changes
     const interval = setInterval(() => {
-      const refreshUrl = simulatedHour !== null 
-        ? `${apiUrl}/api/facilities?simulatedHour=${simulatedHour}`
-        : `${apiUrl}/api/facilities`;
+      const refreshUrl = `${apiUrl}/api/facilities?simulatedHour=${simulatedHour}`;
       
       fetch(refreshUrl)
         .then(res => res.json())
@@ -395,27 +391,30 @@ function App() {
             <div className="time-simulator">
               <label><strong>Time of Day Simulator:</strong></label>
               <select 
-                value={simulatedHour === null ? 'current' : simulatedHour} 
+                value={simulatedHour === null ? new Date().getHours() : simulatedHour} 
                 onChange={(e) => {
-                  const newHour = e.target.value === 'current' ? null : parseInt(e.target.value);
+                  const newHour = parseInt(e.target.value);
                   setSimulatedHour(newHour);
-                  console.log('Time changed to:', newHour === null ? 'current' : `${newHour}:00`);
+                  console.log('Time changed to:', `${newHour}:00`);
                 }}
                 className="time-selector"
               >
-                <option value="current">Current Time (Real)</option>
+                <option value="0">12 AM - Midnight</option>
+                <option value="2">2 AM - Late Night</option>
+                <option value="6">6 AM - Early Morning</option>
                 <option value="7">7 AM - Morning Rush Hour</option>
                 <option value="9">9 AM - Business Hours Start</option>
-                <option value="12">12 PM - Lunch Time</option>
+                <option value="12">12 PM - Noon / Lunch Time</option>
                 <option value="14">2 PM - Afternoon</option>
+                <option value="16">4 PM - Pre-Rush Hour</option>
                 <option value="17">5 PM - Evening Rush Hour</option>
+                <option value="19">7 PM - Evening</option>
                 <option value="20">8 PM - Evening (UC Closing)</option>
                 <option value="22">10 PM - Night</option>
-                <option value="2">2 AM - Late Night</option>
               </select>
-              <p className="simulator-note">See how recommendations change throughout the day</p>
+              <p className="simulator-note">Defaults to current hour. Select different times to see how recommendations change.</p>
               <div className="current-conditions">
-                <span><strong>Simulated Time:</strong> {simulatedHour === null ? 'Current' : `${simulatedHour % 12 || 12}:00 ${simulatedHour >= 12 ? 'PM' : 'AM'}`}</span>
+                <span><strong>Selected Time:</strong> {`${simulatedHour % 12 || 12}:00 ${simulatedHour >= 12 ? 'PM' : 'AM'}`}</span>
                 <span className="traffic-dot"><strong>Traffic:</strong> <span className={`traffic-${trafficLevel}`}>{trafficLevel.toUpperCase()}</span></span>
               </div>
             </div>
