@@ -375,8 +375,8 @@ function App() {
         <h1>EVAC+</h1>
         <p className="subtitle">Emergency Evacuation & Care Access Platform</p>
         <div className="header-badges">
-          <div className="status-badge">
-            Backend: {backendStatus}
+          <div className={`status-badge ${backendStatus === 'Connected' ? 'status-connected' : 'status-disconnected'}`}>
+            {backendStatus === 'Connected' ? 'Backend Connected' : 'Backend NOT CONNECTED'}
           </div>
           <div className={`traffic-badge traffic-${trafficLevel}`}>
             Traffic: {trafficLevel.toUpperCase()}
