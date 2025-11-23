@@ -104,8 +104,8 @@ const getTimeMultiplier = (facilityType, specifiedHour = null) => {
  * Based on real Atlanta traffic patterns (notorious for rush hour!)
  * @returns {string} 'low', 'moderate', 'heavy', or 'severe'
  */
-const getTrafficLevel = () => {
-  const hour = getAtlantaHour();
+const getTrafficLevel = (specifiedHour = null) => {
+  const hour = specifiedHour !== null ? specifiedHour : getAtlantaHour();
   
   // Atlanta rush hours are brutal
   if ((hour >= 7 && hour < 10) || (hour >= 16 && hour < 19)) {
@@ -126,57 +126,106 @@ const getTrafficLevel = () => {
  * This creates realistic patterns without needing real-time APIs
  */
 const baseFacilities = [
+  // ===== HOSPITALS (ERs) - Open 24/7 =====
   {
     id: 1,
     name: 'Grady Memorial Hospital',
     type: 'ER',
-    position: { lat: 33.752222, lng: -84.382392 },  // 33° 45' 8.00" N, -84° 22' 56.61" W
-    baseWaitTime: 45,  // Base wait time - will be adjusted by time of day
+    position: { lat: 33.75195416278939, lng: -84.3819428302756 },
+    baseWaitTime: 45,
     insurance: ['All'],
     specialties: ['Emergency', 'Trauma', 'Cardiac'],
-    description: 'Level I Trauma Center - Handles most severe emergencies'
+    description: 'Level I Trauma Center - Open 24 Hours',
+    hours: 'Open 24 Hours'
   },
   {
     id: 2,
-    name: 'Emory Midtown Hospital',
+    name: 'Emory University Hospital Midtown',
     type: 'ER',
-    position: { lat: 33.7806, lng: -84.3722 },
-    baseWaitTime: 30,
+    position: { lat: 33.76869084805124, lng: -84.38621170037598 },
+    baseWaitTime: 35,
     insurance: ['Most major'],
     specialties: ['Emergency', 'Cardiac', 'Orthopedic'],
-    description: 'Well-equipped ER with cardiac specialists'
+    description: 'Well-equipped ER - Open 24 Hours',
+    hours: 'Open 24 Hours'
   },
   {
     id: 3,
-    name: 'Piedmont Hospital',
+    name: 'Piedmont Atlanta Hospital',
     type: 'ER',
-    position: { lat: 33.8048, lng: -84.3685 },
-    baseWaitTime: 50,
+    position: { lat: 33.81103085024464, lng: -84.3943913906418 },
+    baseWaitTime: 40,
     insurance: ['All'],
     specialties: ['Emergency', 'Trauma', 'Stroke'],
-    description: 'Comprehensive ER with stroke center'
+    description: 'Comprehensive ER with stroke center - Open 24 Hours',
+    hours: 'Open 24 Hours'
   },
+  
+  // ===== URGENT CARE FACILITIES - Various Hours =====
   {
     id: 4,
-    name: 'Piedmont Urgent Care - Midtown',
+    name: 'Peachtree Immediate Care - Midtown',
     type: 'Urgent Care',
-    position: { lat: 33.774007, lng: -84.358614 },
+    position: { lat: 33.786171179889614, lng: -84.40213978794662 },
     baseWaitTime: 15,
     insurance: ['Most major'],
     specialties: ['Urgent Care', 'X-Ray'],
     description: 'Quick walk-in care for minor injuries',
-    hours: '8am-8pm daily'
+    hours: '8am-8pm daily',
+    openHour: 8,
+    closeHour: 20
   },
   {
     id: 5,
-    name: 'Peachtree Immediate Care',
+    name: 'Northside Family Medicine & Urgent Care - Midtown',
     type: 'Urgent Care',
-    position: { lat: 33.7890, lng: -84.3840 },
+    position: { lat: 33.78559512820032, lng: -84.3881366051433 },
     baseWaitTime: 18,
+    insurance: ['Most major'],
+    specialties: ['Urgent Care', 'Family Medicine'],
+    description: 'Family medicine and urgent care services',
+    hours: '8am-8pm daily',
+    openHour: 8,
+    closeHour: 20
+  },
+  {
+    id: 6,
+    name: 'Urgent Care 24/7 Atlanta',
+    type: 'Urgent Care',
+    position: { lat: 33.7639936949412, lng: -84.39236397399422 },
+    baseWaitTime: 20,
+    insurance: ['Most major'],
+    specialties: ['Urgent Care', '24/7 Service'],
+    description: 'Only 24-hour urgent care in the area',
+    hours: 'Open 24 Hours',
+    openHour: 0,
+    closeHour: 24
+  },
+  {
+    id: 7,
+    name: 'Piedmont Urgent Care',
+    type: 'Urgent Care',
+    position: { lat: 33.774404209332836, lng: -84.35837497260282 },
+    baseWaitTime: 17,
     insurance: ['Most major'],
     specialties: ['Urgent Care', 'Lab Services'],
     description: 'Full-service urgent care with lab',
-    hours: '8am-8pm daily'
+    hours: '7am-7pm daily',
+    openHour: 7,
+    closeHour: 19
+  },
+  {
+    id: 8,
+    name: 'Atlanta Urgent Care at Peachtree',
+    type: 'Urgent Care',
+    position: { lat: 33.820357661936804, lng: -84.39200269737198 },
+    baseWaitTime: 16,
+    insurance: ['Most major'],
+    specialties: ['Urgent Care', 'X-Ray'],
+    description: 'Convenient Peachtree location',
+    hours: 'Mon-Thu 8am-8pm, Fri 8am-7pm, Sat-Sun 9am-6pm',
+    openHour: 8,
+    closeHour: 20  // Most restrictive hours for simple logic
   }
 ];
 
@@ -185,25 +234,42 @@ const baseFacilities = [
  * This function applies time-based multipliers to create realistic patterns
  * @returns {Array} Facilities with current wait times and status
  */
-const getFacilitiesWithCurrentStatus = () => {
-  const hour = getAtlantaHour();
+const getFacilitiesWithCurrentStatus = (specifiedHour = null) => {
+  const hour = specifiedHour !== null ? specifiedHour : getAtlantaHour();
   
   return baseFacilities.map(facility => {
-    const multiplier = getTimeMultiplier(facility.type);
+    const multiplier = getTimeMultiplier(facility.type, hour);
     
     // Calculate current wait time
     const currentWaitTime = Math.round(facility.baseWaitTime * multiplier);
     
-    // Determine if urgent care is open
+    // Determine if facility is open based on its specific hours
     let status = 'Open';
-    if (facility.type === 'Urgent Care' && (hour < 8 || hour >= 20)) {
-      status = 'Closed';
+    
+    if (facility.type === 'ER') {
+      // ERs are always open 24/7
+      status = 'Open';
+    } else if (facility.type === 'Urgent Care') {
+      // Check if facility has specific hours
+      if (facility.openHour !== undefined && facility.closeHour !== undefined) {
+        if (facility.openHour === 0 && facility.closeHour === 24) {
+          // 24-hour urgent care
+          status = 'Open';
+        } else if (hour < facility.openHour || hour >= facility.closeHour) {
+          status = 'Closed';
+        }
+      } else {
+        // Default urgent care hours (8am-8pm) if not specified
+        if (hour < 8 || hour >= 20) {
+          status = 'Closed';
+        }
+      }
     }
     
     return {
       ...facility,
       currentWaitTime,
-      waitTimeDisplay: currentWaitTime > 0 ? `${currentWaitTime} min` : 'Closed',
+      waitTimeDisplay: status === 'Open' && currentWaitTime > 0 ? `${currentWaitTime} min` : 'Closed',
       status,
       capacity: currentWaitTime < 20 ? 'High' : currentWaitTime < 40 ? 'Medium' : 'Low'
     };
@@ -231,50 +297,9 @@ app.get('/api/facilities', (req, res) => {
   // Check if simulated hour is provided
   const simulatedHour = req.query.simulatedHour ? parseInt(req.query.simulatedHour) : null;
   
-  // Temporarily override getAtlantaHour for simulation
-  let facilities, trafficLevel;
-  
-  if (simulatedHour !== null && simulatedHour >= 0 && simulatedHour <= 23) {
-    // Create a temporary override
-    const originalHour = new Date().getHours();
-    
-    // Monkey patch for this request only
-    const tempGetHour = () => simulatedHour;
-    
-    // Calculate facilities with simulated hour
-    facilities = baseFacilities.map(facility => {
-      const multiplier = getTimeMultiplier(facility.type, simulatedHour);
-      const currentWaitTime = Math.round(facility.baseWaitTime * multiplier);
-      
-      let status = 'Open';
-      if (facility.type === 'Urgent Care' && (simulatedHour < 8 || simulatedHour >= 20)) {
-        status = 'Closed';
-      }
-      
-      return {
-        ...facility,
-        currentWaitTime,
-        waitTimeDisplay: currentWaitTime > 0 && status === 'Open' ? `${currentWaitTime} min` : 'Closed',
-        status,
-        capacity: currentWaitTime < 20 ? 'High' : currentWaitTime < 40 ? 'Medium' : 'Low'
-      };
-    });
-    
-    // Calculate traffic for simulated hour
-    if ((simulatedHour >= 7 && simulatedHour < 10) || (simulatedHour >= 16 && simulatedHour < 19)) {
-      trafficLevel = 'severe';
-    } else if ((simulatedHour >= 6 && simulatedHour < 7) || (simulatedHour >= 10 && simulatedHour < 12) || (simulatedHour >= 14 && simulatedHour < 16)) {
-      trafficLevel = 'heavy';
-    } else if (simulatedHour >= 12 && simulatedHour < 14) {
-      trafficLevel = 'moderate';
-    } else {
-      trafficLevel = 'low';
-    }
-  } else {
-    // Use current time
-    facilities = getFacilitiesWithCurrentStatus();
-    trafficLevel = getTrafficLevel();
-  }
+  // Get facilities with simulated or current hour
+  const facilities = getFacilitiesWithCurrentStatus(simulatedHour);
+  const trafficLevel = getTrafficLevel(simulatedHour);
   
   res.json({
     success: true,
