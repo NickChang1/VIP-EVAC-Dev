@@ -50,6 +50,16 @@ const urgentCareIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Highlighted marker (gold/yellow for recommended facility)
+const highlightedIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 function App() {
   // ===== STATE MANAGEMENT =====
   // Track backend API connection status
@@ -354,7 +364,6 @@ function App() {
       return;
     }
     
-    const persona = personas[selectedPersona];
     const ers = facilities.filter(f => f.type === 'ER' && f.status === 'Open');
     const urgentCares = facilities.filter(f => f.type === 'Urgent Care' && f.status === 'Open');
     
@@ -858,10 +867,14 @@ function App() {
                   }}
                 />
                 
-                {/* Facility marker */}
+                {/* Facility marker - gold if recommended, otherwise red/blue */}
                 <Marker 
                   position={facility.position}
-                  icon={facility.type === 'ER' ? hospitalIcon : urgentCareIcon}
+                  icon={
+                    highlightedFacilityId === facility.id 
+                      ? highlightedIcon 
+                      : (facility.type === 'ER' ? hospitalIcon : urgentCareIcon)
+                  }
                 >
                   <Popup>
                     <div style={{ minWidth: '220px' }}>
