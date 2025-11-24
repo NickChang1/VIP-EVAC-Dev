@@ -69,6 +69,63 @@ function App() {
   
   // Simulated time of day (defaults to current hour)
   const [simulatedHour, setSimulatedHour] = useState(new Date().getHours());
+  
+  // Selected persona (default to Burn Injury)
+  const [selectedPersona, setSelectedPersona] = useState('burn');
+  
+  // Highlighted facility ID (for showing recommended facility on map)
+  const [highlightedFacilityId, setHighlightedFacilityId] = useState(null);
+
+  // ===== PERSONA DEFINITIONS =====
+  const personas = {
+    burn: {
+      id: 'burn',
+      name: 'Single Mother with Burn Injury',
+      age: '32',
+      description: 'Has child at home | Limited transportation',
+      severityLabel: 'Burn Severity',
+      riskTolerance: 'low'
+    },
+    pregnancy: {
+      id: 'pregnancy',
+      name: 'Pregnant Woman with Pre-eclampsia Symptoms',
+      age: '25-35',
+      description: 'Late stage pregnancy | Very concerned about pregnancy',
+      severityLabel: 'Condition Severity',
+      trimesters: {
+        'Mild': '1st Trimester - Stable BP, mild swelling',
+        'Moderate': '2nd Trimester - Higher BP, headache, vision changes',
+        'Severe': '3rd Trimester - Extreme BP, non-stop headache, seizure risk'
+      },
+      riskTolerance: 'very-low'
+    },
+    asthma: {
+      id: 'asthma',
+      name: 'Adult with Asthma Attack',
+      age: '30-40',
+      description: 'Limited mobility due to shortness of breath | Takes care of elderly parents',
+      severityLabel: 'Peak Flow Zone',
+      zones: {
+        'Mild': 'Green Zone (80-100% PFM) - Symptoms controlled',
+        'Moderate': 'Yellow Zone (50-80% PFM) - Symptoms worsening',
+        'Severe': 'Red Zone (<50% PFM) - Severe shortness of breath'
+      },
+      riskTolerance: 'medium'
+    },
+    dementia: {
+      id: 'dementia',
+      name: 'Elder with Dementia',
+      age: '75-80',
+      description: 'Frail mobility | Has caretaker | Low tech comfort',
+      severityLabel: 'Agitation Level',
+      levels: {
+        'Mild': 'Mild Distress - Slight confusion, mild anxiety',
+        'Moderate': 'Moderate Agitation - Increased confusion, restlessness',
+        'Severe': 'Severe Crisis - Screaming, hitting, severe paranoia'
+      },
+      riskTolerance: 'low-medium'
+    }
+  };
 
   // ===== MAP CONFIGURATION =====
   // User location: Klaus Advanced Computing Building, Georgia Tech
@@ -285,6 +342,11 @@ function App() {
    * 4. Cost considerations
    * 5. Patient profile (single mother = cost-conscious, time-sensitive)
    */
+  /**
+   * WEIGHTED RECOMMENDATION ENGINE
+   * Scores facilities based on multiple factors for each persona
+   * Returns best facility with reasoning
+   */
   const handleGetRecommendation = () => {
     // Check if facilities are loaded
     if (!facilities || facilities.length === 0) {
@@ -292,81 +354,202 @@ function App() {
       return;
     }
     
-    let result = {
-      decision: '',      // The recommended action (Stay/Move)
-      facility: null,    // Which facility to use
-      reasoning: []      // Why this recommendation makes sense
-    };
-
-    // SEVERE BURNS: Life-threatening, needs immediate emergency care
-    // Find facilities by type
+    const persona = personas[selectedPersona];
     const ers = facilities.filter(f => f.type === 'ER' && f.status === 'Open');
     const urgentCares = facilities.filter(f => f.type === 'Urgent Care' && f.status === 'Open');
     
+    let result = {
+      decision: '',
+      facility: null,
+      reasoning: [],
+      travelTime: null
+    };
+    
+    // SEVERE CASES - Always go to ER or call 911
     if (severity === 'Severe') {
       // Choose Grady (trauma center) for severe cases
-      const grady = facilities.find(f => f.name.includes('Grady'));
-      const travel = calculateTravelTime(grady?.position || ers[0]?.position);
-      result.decision = 'STAY - Call 911';
-      result.facility = grady || ers[0];
-      result.travelTime = travel;
-      result.reasoning = [
-        'Severe burns require immediate emergency care',
-        'Ambulance ensures safe transport and medical attention en route',
-        result.facility?.name + ' has specialized trauma care',
-        `Facility is ${travel.distance} miles away (${travel.time} min by ambulance)`
-      ];
-    // MODERATE BURNS: Serious but not immediately life-threatening
-    // Can safely travel to ER, choose facility with shortest wait
-    } else if (severity === 'Moderate') {
-      // Find ER with shortest wait time
-      const bestER = ers.sort((a, b) => a.currentWaitTime - b.currentWaitTime)[0];
-      const travel = calculateTravelTime(bestER?.position);
-      result.decision = 'MOVE to ER';
-      result.facility = bestER;
-      result.travelTime = travel;
-      result.reasoning = [
-        'Moderate burns need ER assessment',
-        `${bestER?.name} has shortest wait time (${bestER?.currentWaitTime} min)`,
-        `Travel: ${travel.distance} miles, ~${travel.time} min by car`,
-        `Current traffic: ${trafficLevel.toUpperCase()} - total time to see doctor: ~${travel.time + bestER?.currentWaitTime} min`
-      ];
-    // MILD BURNS: Minor injury, can be treated at Urgent Care
-    // Cheaper and faster than ER for non-emergency conditions
-    } else { // Mild
-      // Find Urgent Care with shortest wait
-      const bestUC = urgentCares.sort((a, b) => a.currentWaitTime - b.currentWaitTime)[0];
-      
-      if (bestUC && bestUC.status === 'Open') {
-        const travel = calculateTravelTime(bestUC?.position);
-        result.decision = 'MOVE to Urgent Care';
-        result.facility = bestUC;
-        result.travelTime = travel;
+      // All severe cases need ER immediately
+      if (selectedPersona === 'pregnancy' || selectedPersona === 'asthma') {
+        // Call 911 for pregnancy complications and severe asthma
+        const grady = facilities.find(f => f.name.includes('Grady'));
+        result.facility = grady || ers[0];
+        result.decision = 'STAY - Call 911';
+        result.travelTime = calculateTravelTime(result.facility?.position);
+        
+        if (selectedPersona === 'pregnancy') {
+          result.reasoning = [
+            'Extreme blood pressure and seizure risk requires immediate specialized care',
+            'Ambulance provides critical monitoring and can administer emergency medications',
+            `${result.facility?.name} has OB specialists available 24/7`,
+            'Do not drive yourself - risk of seizure while driving is too high'
+          ];
+        } else { // asthma
+          result.reasoning = [
+            'Red Zone (<50% PFM) indicates severe respiratory distress',
+            'Relief inhaler not working - need immediate medical intervention',
+            'Ambulance can provide nebulizer treatment and oxygen en route',
+            `${result.facility?.name} can provide intubation if breathing worsens`
+          ];
+        }
+      } else if (selectedPersona === 'dementia') {
+        // Severe crisis needs specialized geriatric ER
+        const scored = ers.map(facility => {
+          const travel = calculateTravelTime(facility.position);
+          return {
+            facility,
+            score: (100 - facility.currentWaitTime) + (50 - travel.time * 2),
+            travel
+          };
+        }).sort((a, b) => b.score - a.score);
+        
+        result.facility = scored[0].facility;
+        result.decision = 'MOVE to ER with Caretaker';
+        result.travelTime = scored[0].travel;
         result.reasoning = [
-          'Minor burns can be treated at Urgent Care',
-          `Much shorter wait time (${bestUC.currentWaitTime} min)`,
-          `Travel: ${travel.distance} miles, ~${travel.time} min by car`,
-          `Lower cost than ER visit ($80-150 vs $300-500)`,
-          `Total time to treatment: ~${travel.time + bestUC.currentWaitTime} min`
+          'Severe crisis (screaming, hitting, paranoia) requires immediate de-escalation',
+          'Caretaker should accompany to provide familiar presence and medical history',
+          `${result.facility.name} has shortest wait (${result.facility.currentWaitTime} min)`,
+          'Avoid bright lights and loud noises - request quiet room upon arrival'
+        ];
+      } else { // burn injury
+        const grady = facilities.find(f => f.name.includes('Grady'));
+        result.facility = grady || ers[0];
+        result.decision = 'STAY - Call 911';
+        result.travelTime = calculateTravelTime(result.facility?.position);
+        result.reasoning = [
+          'Severe burns require immediate trauma care',
+          'Ambulance provides pain management and sterile wound care en route',
+          `${result.facility?.name} has specialized burn unit`,
+          `Facility is ${result.travelTime.distance} miles away (${result.travelTime.time} min by ambulance)`
+        ];
+      }
+    } 
+    // MODERATE CASES - Weighted scoring based on persona priorities
+    else if (severity === 'Moderate') {
+      const allFacilities = selectedPersona === 'burn' ? [...ers, ...urgentCares] : ers;
+      
+      // Score each facility based on persona-specific weights
+      const scored = allFacilities.map(facility => {
+        const travel = calculateTravelTime(facility.position);
+        const totalTime = travel.time + facility.currentWaitTime;
+        
+        let score = 0;
+        let weights = {};
+        
+        // Persona-specific weights
+        if (selectedPersona === 'pregnancy') {
+          weights = { waitTime: 50, travelTime: 30, expertise: 20 };
+          score = (100 - facility.currentWaitTime) * (weights.waitTime / 100);
+          score += (50 - travel.time) * (weights.travelTime / 100);
+          score += facility.type === 'ER' ? 20 : 0; // Prefer ER
+        } else if (selectedPersona === 'asthma') {
+          weights = { waitTime: 40, travelTime: 40, cost: 20 };
+          score = (100 - facility.currentWaitTime) * (weights.waitTime / 100);
+          score += (50 - travel.time) * (weights.travelTime / 100);
+          score += facility.type === 'Urgent Care' ? 20 : 0; // UC ok if has nebulizer
+        } else if (selectedPersona === 'dementia') {
+          weights = { waitTime: 30, travelTime: 50, familiarity: 20 };
+          score = (100 - facility.currentWaitTime) * (weights.waitTime / 100);
+          score += (50 - travel.time) * (weights.travelTime / 100);
+          score += 20; // Closer is better for confusion
+        } else { // burn
+          weights = { waitTime: 40, travelTime: 30, cost: 30 };
+          score = (100 - facility.currentWaitTime) * (weights.waitTime / 100);
+          score += (50 - travel.time) * (weights.travelTime / 100);
+          score += facility.type === 'Urgent Care' ? 30 : 0; // Cost sensitive
+        }
+        
+        return { facility, score, travel, totalTime };
+      }).sort((a, b) => b.score - a.score);
+      
+      result.facility = scored[0].facility;
+      result.travelTime = scored[0].travel;
+      result.decision = `MOVE to ${result.facility.type}`;
+      
+      // Generate reasoning based on persona
+      if (selectedPersona === 'pregnancy') {
+        result.reasoning = [
+          'High blood pressure and headache need professional evaluation',
+          `${result.facility.name} can run lab tests to check for pre-eclampsia`,
+          `Wait time: ${result.facility.currentWaitTime} min, Travel: ${result.travelTime.time} min`,
+          'Total time to see doctor: ~' + (result.travelTime.time + result.facility.currentWaitTime) + ' min'
+        ];
+      } else if (selectedPersona === 'asthma') {
+        result.reasoning = [
+          'Yellow Zone (50-80% PFM) - symptoms worsening, need nebulizer treatment',
+          `${result.facility.name} can provide quick-relief treatment`,
+          `${result.facility.type === 'Urgent Care' ? 'Lower cost than ER' : 'Full emergency capabilities'}`,
+          `Total time: ${scored[0].totalTime} min (${result.travelTime.time} min travel + ${result.facility.currentWaitTime} min wait)`
+        ];
+      } else if (selectedPersona === 'dementia') {
+        result.reasoning = [
+          'Moderate agitation - increased confusion and restlessness',
+          'Closer facility reduces stress and disorientation',
+          `${result.facility.name} is only ${result.travelTime.distance} miles away`,
+          'Bring comfort items and have caretaker explain each step'
+        ];
+      } else { // burn
+        result.reasoning = [
+          'Moderate burns need professional assessment',
+          `${result.facility.name} has shortest total time (${scored[0].totalTime} min)`,
+          result.facility.type === 'Urgent Care' ? 'Much lower cost than ER ($80-150 vs $300-500)' : 'ER provides comprehensive care',
+          `Travel: ${result.travelTime.distance} mi, ${result.travelTime.time} min`
+        ];
+      }
+    }
+    // MILD CASES - Prefer Urgent Care when possible
+    else {
+      const availableUCs = urgentCares.filter(f => f.status === 'Open');
+      
+      if (availableUCs.length > 0 && selectedPersona !== 'pregnancy') {
+        // Score urgent cares
+        const scored = availableUCs.map(facility => {
+          const travel = calculateTravelTime(facility.position);
+          const totalTime = travel.time + facility.currentWaitTime;
+          return { facility, travel, totalTime };
+        }).sort((a, b) => a.totalTime - b.totalTime);
+        
+        result.facility = scored[0].facility;
+        result.travelTime = scored[0].travel;
+        result.decision = 'MOVE to Urgent Care';
+        result.reasoning = [
+          selectedPersona === 'burn' ? 'Minor burns can be treated at Urgent Care' : 
+          selectedPersona === 'asthma' ? 'Green Zone (80-100% PFM) - symptoms controlled, routine check recommended' :
+          'Mild distress can be managed with calming environment',
+          `${result.facility.name} has shortest total time (${scored[0].totalTime} min)`,
+          `Much lower cost than ER ($80-150 vs $300-500)`,
+          `Travel: ${result.travelTime.distance} mi in ${result.travelTime.time} min`
         ];
       } else {
-        // If urgent cares are closed, recommend ER
-        const bestER = ers.sort((a, b) => a.currentWaitTime - b.currentWaitTime)[0];
-        const travel = calculateTravelTime(bestER?.position);
-        result.decision = 'MOVE to ER (Urgent Care closed)';
-        result.facility = bestER;
-        result.travelTime = travel;
+        // Pregnancy with mild symptoms or all UCs closed - go to ER
+        const scored = ers.map(facility => {
+          const travel = calculateTravelTime(facility.position);
+          return { facility, travel, totalTime: travel.time + facility.currentWaitTime };
+        }).sort((a, b) => a.totalTime - b.totalTime);
+        
+        result.facility = scored[0].facility;
+        result.travelTime = scored[0].travel;
+        result.decision = availableUCs.length === 0 ? 'MOVE to ER (Urgent Care closed)' : 'MOVE to ER';
         result.reasoning = [
-          'Urgent Care centers are currently closed',
-          `Go to ${bestER?.name} instead`,
-          `Travel: ${travel.distance} miles, ~${travel.time} min`,
-          'Still appropriate for minor burns'
+          selectedPersona === 'pregnancy' ? 'Any pregnancy symptoms should be evaluated at ER' : 'Urgent Care centers are currently closed',
+          `${result.facility.name} has shortest wait (${result.facility.currentWaitTime} min)`,
+          `Travel: ${result.travelTime.distance} mi, ${result.travelTime.time} min`,
+          availableUCs.length === 0 ? 'Still appropriate for mild symptoms' : 'Better safe than sorry during pregnancy'
         ];
       }
     }
 
-    // Update state to display recommendation to user
+    // Highlight facility on map and scroll to recommendation
+    setHighlightedFacilityId(result.facility?.id);
     setRecommendation(result);
+    
+    // Auto-scroll to recommendation
+    setTimeout(() => {
+      document.querySelector('.recommendation-result')?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest' 
+      });
+    }, 100);
   };
 
   return (
@@ -419,34 +602,80 @@ function App() {
               </div>
             </div>
             
+            <div className="persona-selector">
+              <label><strong>Select Profile:</strong></label>
+              <select 
+                value={selectedPersona} 
+                onChange={(e) => {
+                  setSelectedPersona(e.target.value);
+                  setRecommendation(null);
+                  setHighlightedFacilityId(null);
+                }}
+                className="persona-dropdown"
+              >
+                <option value="burn">Single Mother with Burn Injury</option>
+                <option value="pregnancy">Pregnant Woman with Pre-eclampsia</option>
+                <option value="asthma">Adult with Asthma Attack</option>
+                <option value="dementia">Elder with Dementia</option>
+              </select>
+            </div>
+
             <div className="profile-display">
-              <h3>Profile: Single Mother with Burn Injury</h3>
-              <p>Age: 32 | Has child at home | Limited transportation</p>
+              <h3>Profile: {personas[selectedPersona].name}</h3>
+              <p>Age: {personas[selectedPersona].age} | {personas[selectedPersona].description}</p>
               <p className="location-info">Current Location: Klaus Building, Georgia Tech (266 Ferst Dr NW)</p>
             </div>
             
             <div className="severity-selector">
-              <label><strong>Burn Severity:</strong></label>
+              <label><strong>{personas[selectedPersona].severityLabel}:</strong></label>
               <div className="severity-buttons">
                 <button 
                   className={severity === 'Mild' ? 'severity-btn active' : 'severity-btn'}
                   onClick={() => setSeverity('Mild')}
+                  title={
+                    selectedPersona === 'pregnancy' ? personas.pregnancy.trimesters.Mild :
+                    selectedPersona === 'asthma' ? personas.asthma.zones.Mild :
+                    selectedPersona === 'dementia' ? personas.dementia.levels.Mild :
+                    'Minor injury'
+                  }
                 >
                   Mild
                 </button>
                 <button 
                   className={severity === 'Moderate' ? 'severity-btn active' : 'severity-btn'}
                   onClick={() => setSeverity('Moderate')}
+                  title={
+                    selectedPersona === 'pregnancy' ? personas.pregnancy.trimesters.Moderate :
+                    selectedPersona === 'asthma' ? personas.asthma.zones.Moderate :
+                    selectedPersona === 'dementia' ? personas.dementia.levels.Moderate :
+                    'Serious condition'
+                  }
                 >
                   Moderate
                 </button>
                 <button 
                   className={severity === 'Severe' ? 'severity-btn active' : 'severity-btn'}
                   onClick={() => setSeverity('Severe')}
+                  title={
+                    selectedPersona === 'pregnancy' ? personas.pregnancy.trimesters.Severe :
+                    selectedPersona === 'asthma' ? personas.asthma.zones.Severe :
+                    selectedPersona === 'dementia' ? personas.dementia.levels.Severe :
+                    'Life-threatening'
+                  }
                 >
                   Severe
                 </button>
               </div>
+              <p className="severity-hint">
+                {selectedPersona === 'pregnancy' && personas.pregnancy.trimesters[severity]}
+                {selectedPersona === 'asthma' && personas.asthma.zones[severity]}
+                {selectedPersona === 'dementia' && personas.dementia.levels[severity]}
+                {selectedPersona === 'burn' && (
+                  severity === 'Mild' ? 'Minor burns - redness, minor pain' :
+                  severity === 'Moderate' ? 'Serious burns - blistering, severe pain' :
+                  'Severe burns - deep tissue damage, life-threatening'
+                )}
+              </p>
             </div>
 
             <button className="recommend-btn" onClick={handleGetRecommendation}>
@@ -602,6 +831,21 @@ function App() {
 
             {facilities.length > 0 && facilities.map(facility => (
               <React.Fragment key={facility.id}>
+                {/* Highlight circle for recommended facility */}
+                {highlightedFacilityId === facility.id && (
+                  <Circle
+                    center={facility.position}
+                    radius={300}
+                    pathOptions={{ 
+                      color: '#ffd43b',
+                      fillColor: '#ffd43b',
+                      fillOpacity: 0.25,
+                      weight: 4,
+                      dashArray: '10, 10'
+                    }}
+                  />
+                )}
+                
                 {/* Capacity circle - size based on wait time */}
                 <Circle
                   center={facility.position}
@@ -610,7 +854,7 @@ function App() {
                     color: facility.type === 'ER' ? '#ff6b6b' : '#4dabf7',
                     fillColor: facility.type === 'ER' ? '#ff6b6b' : '#4dabf7',
                     fillOpacity: 0.15,
-                    weight: 2
+                    weight: highlightedFacilityId === facility.id ? 3 : 2
                   }}
                 />
                 

@@ -175,6 +175,42 @@
   margin-top: 1rem;
 }
 
+.persona-selector {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #e7f5ff;
+  border-radius: 6px;
+  border-left: 4px solid #4dabf7;
+}
+
+.persona-selector label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.persona-dropdown {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #4dabf7;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.persona-dropdown:hover {
+  border-color: #228be6;
+}
+
+.persona-dropdown:focus {
+  outline: none;
+  border-color: #228be6;
+  box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2);
+}
+
 .time-simulator {
   margin-bottom: 1.5rem;
   padding: 1rem;
@@ -317,6 +353,18 @@
   border-color: #667eea;
   background: #667eea;
   color: white;
+}
+
+.severity-hint {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-left: 3px solid #667eea;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #495057;
+  font-style: italic;
+  line-height: 1.5;
 }
 
 .recommend-btn {
