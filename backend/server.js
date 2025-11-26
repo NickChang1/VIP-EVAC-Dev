@@ -82,12 +82,14 @@ const getTimeMultiplier = (facilityType, specifiedHour = null) => {
   const hour = specifiedHour !== null ? specifiedHour : getAtlantaHour();
   
   if (facilityType === 'ER') {
-    // ERs are busiest during evening rush and nights (accidents, emergencies)
-    if (hour >= 18 && hour < 23) return 1.8;  // 6pm-11pm: Peak ER time
-    if (hour >= 14 && hour < 18) return 1.5;  // 2pm-6pm: Afternoon rush
+    // ERs busiest during evening rush, then slow down late night
+    if (hour >= 18 && hour < 21) return 1.6;  // 6pm-9pm: Peak ER time (accidents, post-work injuries)
+    if (hour >= 21 && hour < 24) return 1.2;  // 9pm-midnight: Slowing down
+    if (hour >= 14 && hour < 18) return 1.4;  // 2pm-6pm: Afternoon moderate
     if (hour >= 10 && hour < 14) return 1.0;  // 10am-2pm: Normal
-    if (hour >= 6 && hour < 10) return 1.2;   // 6am-10am: Morning moderate
-    return 0.7;  // Midnight-6am: Quieter
+    if (hour >= 6 && hour < 10) return 1.1;   // 6am-10am: Morning moderate
+    if (hour >= 0 && hour < 6) return 0.6;    // Midnight-6am: Quietest
+    return 0.8;  // Other times
   } else { // Urgent Care
     // Urgent Care busiest during business hours, closed at night
     if (hour >= 9 && hour < 12) return 1.6;   // 9am-noon: Morning rush
@@ -132,7 +134,7 @@ const baseFacilities = [
     name: 'Grady Memorial Hospital',
     type: 'ER',
     position: { lat: 33.75195416278939, lng: -84.3819428302756 },
-    baseWaitTime: 45,
+    baseWaitTime: 50,  // Busy trauma center
     insurance: ['All'],
     specialties: ['Emergency', 'Trauma', 'Cardiac'],
     description: 'Level I Trauma Center - Open 24 Hours',
@@ -143,7 +145,7 @@ const baseFacilities = [
     name: 'Emory University Hospital Midtown',
     type: 'ER',
     position: { lat: 33.76869084805124, lng: -84.38621170037598 },
-    baseWaitTime: 35,
+    baseWaitTime: 30,  // Well-staffed, efficient
     insurance: ['Most major'],
     specialties: ['Emergency', 'Cardiac', 'Orthopedic'],
     description: 'Well-equipped ER - Open 24 Hours',
@@ -154,7 +156,7 @@ const baseFacilities = [
     name: 'Piedmont Atlanta Hospital',
     type: 'ER',
     position: { lat: 33.81103085024464, lng: -84.3943913906418 },
-    baseWaitTime: 40,
+    baseWaitTime: 35,  // Moderate volume
     insurance: ['All'],
     specialties: ['Emergency', 'Trauma', 'Stroke'],
     description: 'Comprehensive ER with stroke center - Open 24 Hours',
