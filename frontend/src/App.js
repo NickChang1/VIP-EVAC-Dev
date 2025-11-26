@@ -80,22 +80,14 @@ function App() {
   // Simulated time of day (defaults to current hour)
   const [simulatedHour, setSimulatedHour] = useState(new Date().getHours());
   
-  // Selected persona (default to Burn Injury)
-  const [selectedPersona, setSelectedPersona] = useState('burn');
+  // Selected persona (default to Pregnancy)
+  const [selectedPersona, setSelectedPersona] = useState('pregnancy');
   
   // Highlighted facility ID (for showing recommended facility on map)
   const [highlightedFacilityId, setHighlightedFacilityId] = useState(null);
 
   // ===== PERSONA DEFINITIONS =====
   const personas = {
-    burn: {
-      id: 'burn',
-      name: 'Single Mother with Burn Injury',
-      age: '32',
-      description: 'Has child at home | Limited transportation',
-      severityLabel: 'Burn Severity',
-      riskTolerance: 'low'
-    },
     pregnancy: {
       id: 'pregnancy',
       name: 'Pregnant Woman with Pre-eclampsia Symptoms',
@@ -376,30 +368,31 @@ function App() {
     
     // SEVERE CASES - Always go to ER or call 911
     if (severity === 'Severe') {
-      // Choose Grady (trauma center) for severe cases
       // All severe cases need ER immediately
-      if (selectedPersona === 'pregnancy' || selectedPersona === 'asthma') {
-        // Call 911 for pregnancy complications and severe asthma
+      if (selectedPersona === 'pregnancy') {
+        // Pregnancy complications - prioritize hospital with OB/GYN specialists (Emory)
+        const emory = facilities.find(f => f.name.includes('Emory'));
+        result.facility = emory || ers[0];
+        result.decision = 'STAY - Call 911';
+        result.travelTime = calculateTravelTime(result.facility?.position);
+        result.reasoning = [
+          'Extreme blood pressure and seizure risk requires immediate specialized care',
+          'Ambulance provides critical monitoring and can administer emergency medications',
+          `${result.facility?.name} has excellent OB/GYN specialists available 24/7`,
+          'Do not drive yourself - risk of seizure while driving is too high'
+        ];
+      } else if (selectedPersona === 'asthma') {
+        // Severe asthma attack - Grady has excellent emergency respiratory care
         const grady = facilities.find(f => f.name.includes('Grady'));
         result.facility = grady || ers[0];
         result.decision = 'STAY - Call 911';
         result.travelTime = calculateTravelTime(result.facility?.position);
-        
-        if (selectedPersona === 'pregnancy') {
-          result.reasoning = [
-            'Extreme blood pressure and seizure risk requires immediate specialized care',
-            'Ambulance provides critical monitoring and can administer emergency medications',
-            `${result.facility?.name} has OB specialists available 24/7`,
-            'Do not drive yourself - risk of seizure while driving is too high'
-          ];
-        } else { // asthma
-          result.reasoning = [
-            'Red Zone (<50% PFM) indicates severe respiratory distress',
-            'Relief inhaler not working - need immediate medical intervention',
-            'Ambulance can provide nebulizer treatment and oxygen en route',
-            `${result.facility?.name} can provide intubation if breathing worsens`
-          ];
-        }
+        result.reasoning = [
+          'Red Zone (<50% PFM) indicates severe respiratory distress',
+          'Relief inhaler not working - need immediate medical intervention',
+          'Ambulance can provide nebulizer treatment and oxygen en route',
+          `${result.facility?.name} can provide intubation if breathing worsens`
+        ];
       } else if (selectedPersona === 'dementia') {
         // Severe crisis needs specialized geriatric ER
         const scored = ers.map(facility => {
@@ -420,22 +413,11 @@ function App() {
           `${result.facility.name} has shortest wait (${result.facility.currentWaitTime} min)`,
           'Avoid bright lights and loud noises - request quiet room upon arrival'
         ];
-      } else { // burn injury
-        const grady = facilities.find(f => f.name.includes('Grady'));
-        result.facility = grady || ers[0];
-        result.decision = 'STAY - Call 911';
-        result.travelTime = calculateTravelTime(result.facility?.position);
-        result.reasoning = [
-          'Severe burns require immediate trauma care',
-          'Ambulance provides pain management and sterile wound care en route',
-          `${result.facility?.name} has specialized burn unit`,
-          `Facility is ${result.travelTime.distance} miles away (${result.travelTime.time} min by ambulance)`
-        ];
       }
     } 
     // MODERATE CASES - Weighted scoring based on persona priorities
     else if (severity === 'Moderate') {
-      const allFacilities = selectedPersona === 'burn' ? [...ers, ...urgentCares] : ers;
+      const allFacilities = ers;
       
       // Score each facility based on persona-specific weights
       const scored = allFacilities.map(facility => {
@@ -461,11 +443,6 @@ function App() {
           score = (100 - facility.currentWaitTime) * (weights.waitTime / 100);
           score += (50 - travel.time) * (weights.travelTime / 100);
           score += 20; // Closer is better for confusion
-        } else { // burn
-          weights = { waitTime: 40, travelTime: 30, cost: 30 };
-          score = (100 - facility.currentWaitTime) * (weights.waitTime / 100);
-          score += (50 - travel.time) * (weights.travelTime / 100);
-          score += facility.type === 'Urgent Care' ? 30 : 0; // Cost sensitive
         }
         
         return { facility, score, travel, totalTime };
@@ -497,13 +474,6 @@ function App() {
           `${result.facility.name} is only ${result.travelTime.distance} miles away`,
           'Bring comfort items and have caretaker explain each step'
         ];
-      } else { // burn
-        result.reasoning = [
-          'Moderate burns need professional assessment',
-          `${result.facility.name} has shortest total time (${scored[0].totalTime} min)`,
-          result.facility.type === 'Urgent Care' ? 'Much lower cost than ER ($80-150 vs $300-500)' : 'ER provides comprehensive care',
-          `Travel: ${result.travelTime.distance} mi, ${result.travelTime.time} min`
-        ];
       }
     }
     // MILD CASES - Prefer Urgent Care when possible
@@ -522,9 +492,9 @@ function App() {
         result.travelTime = scored[0].travel;
         result.decision = 'MOVE to Urgent Care';
         result.reasoning = [
-          selectedPersona === 'burn' ? 'Minor burns can be treated at Urgent Care' : 
           selectedPersona === 'asthma' ? 'Green Zone (80-100% PFM) - symptoms controlled, routine check recommended' :
-          'Mild distress can be managed with calming environment',
+          selectedPersona === 'dementia' ? 'Mild distress can be managed with calming environment' :
+          'Mild pregnancy symptoms - monitoring recommended',
           `${result.facility.name} has shortest total time (${scored[0].totalTime} min)`,
           `Much lower cost than ER ($80-150 vs $300-500)`,
           `Travel: ${result.travelTime.distance} mi in ${result.travelTime.time} min`
@@ -580,6 +550,23 @@ function App() {
         <section className="info-card">
           <h2>Patient Profile & Severity</h2>
           <div className="input-panel">
+            <div className="persona-selector">
+              <label><strong>Select Profile:</strong></label>
+              <select 
+                value={selectedPersona} 
+                onChange={(e) => {
+                  setSelectedPersona(e.target.value);
+                  setRecommendation(null);
+                  setHighlightedFacilityId(null);
+                }}
+                className="persona-dropdown"
+              >
+                <option value="pregnancy">Pregnant Woman with Pre-eclampsia</option>
+                <option value="asthma">Adult with Asthma Attack</option>
+                <option value="dementia">Elder with Dementia</option>
+              </select>
+            </div>
+
             <div className="time-simulator">
               <label><strong>Time of Day Simulator:</strong></label>
               <select 
@@ -609,24 +596,6 @@ function App() {
                 <span><strong>Selected Time:</strong> {`${simulatedHour % 12 || 12}:00 ${simulatedHour >= 12 ? 'PM' : 'AM'}`}</span>
                 <span className="traffic-dot"><strong>Traffic:</strong> <span className={`traffic-${trafficLevel}`}>{trafficLevel.toUpperCase()}</span></span>
               </div>
-            </div>
-            
-            <div className="persona-selector">
-              <label><strong>Select Profile:</strong></label>
-              <select 
-                value={selectedPersona} 
-                onChange={(e) => {
-                  setSelectedPersona(e.target.value);
-                  setRecommendation(null);
-                  setHighlightedFacilityId(null);
-                }}
-                className="persona-dropdown"
-              >
-                <option value="burn">Single Mother with Burn Injury</option>
-                <option value="pregnancy">Pregnant Woman with Pre-eclampsia</option>
-                <option value="asthma">Adult with Asthma Attack</option>
-                <option value="dementia">Elder with Dementia</option>
-              </select>
             </div>
 
             <div className="profile-display">
@@ -679,11 +648,6 @@ function App() {
                 {selectedPersona === 'pregnancy' && personas.pregnancy.trimesters[severity]}
                 {selectedPersona === 'asthma' && personas.asthma.zones[severity]}
                 {selectedPersona === 'dementia' && personas.dementia.levels[severity]}
-                {selectedPersona === 'burn' && (
-                  severity === 'Mild' ? 'Minor burns - redness, minor pain' :
-                  severity === 'Moderate' ? 'Serious burns - blistering, severe pain' :
-                  'Severe burns - deep tissue damage, life-threatening'
-                )}
               </p>
             </div>
 
@@ -702,7 +666,10 @@ function App() {
                 {recommendation.travelTime && (
                   <p><strong>Travel Time:</strong> {recommendation.travelTime.time} min ({recommendation.travelTime.distance} miles)</p>
                 )}
-                <p><strong>Insurance:</strong> {recommendation.facility.insurance?.join(', ')}</p>
+                <p><strong>Insurance Accepted:</strong> {recommendation.facility.insurance?.join(', ')}</p>
+                {recommendation.facility.insurance && (
+                  <p className="insurance-note">💡 <em>This facility accepts {recommendation.facility.insurance.length === 1 && recommendation.facility.insurance[0] === 'All' ? 'all insurance plans' : 'most major insurance plans'}. Call ahead to confirm your specific coverage.</em></p>
+                )}
                 <p><strong>Traffic Conditions:</strong> <span className={`traffic-${trafficLevel}`}>{trafficLevel.toUpperCase()}</span></p>
               </div>
               <div className="reasoning">
@@ -717,48 +684,6 @@ function App() {
           )}
         </section>
 
-        <section className="info-card">
-          <h2>Midtown Atlanta Facilities Map</h2>
-          <div className="map-legend">
-            <h3>How to Read the Map:</h3>
-            <div className="legend-items">
-              <div className="legend-item">
-                <span className="legend-marker red"></span>
-                <div>
-                  <strong>Red Markers = Emergency Rooms (ERs)</strong>
-                  <p>24/7 emergency care for life-threatening conditions (heart attacks, severe injuries, etc.)</p>
-                </div>
-              </div>
-              <div className="legend-item">
-                <span className="legend-marker blue"></span>
-                <div>
-                  <strong>Blue Markers = Urgent Care Centers</strong>
-                  <p>Walk-in care for non-emergency issues (minor burns, sprains, infections, etc.)</p>
-                </div>
-              </div>
-              <div className="legend-item">
-                <div className="legend-circles">
-                  <div className="legend-circle large"></div>
-                  <div className="legend-circle medium"></div>
-                  <div className="legend-circle small"></div>
-                </div>
-                <div>
-                  <strong>Circle Size = Current Availability</strong>
-                  <p>Larger circle = shorter wait time (more available) | Smaller circle = longer wait time (more crowded)</p>
-                </div>
-              </div>
-              <div className="legend-item">
-                <span className="legend-marker orange"></span>
-                <div>
-                  <strong>Orange/Red Zones = Traffic Congestion</strong>
-                  <p>Areas with current traffic delays - may affect travel time</p>
-                </div>
-              </div>
-            </div>
-            <p className="legend-tip"><strong>Tip:</strong> Click any marker to see facility details (wait time, insurance, etc.)</p>
-          </div>
-        </section>
-
         <section className="map-section">
           <MapContainer 
             center={midtownCenter} 
@@ -770,48 +695,6 @@ function App() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {/* Traffic congestion zones - dynamically update based on traffic level */}
-            {trafficLevel === 'severe' && (
-              <>
-                <Circle
-                  center={[33.7706, -84.3880]}
-                  radius={800}
-                  pathOptions={{ color: '#ff6b6b', fillColor: '#ff6b6b', fillOpacity: 0.3, weight: 2 }}
-                />
-                <Circle
-                  center={[33.7850, -84.3750]}
-                  radius={700}
-                  pathOptions={{ color: '#ff6b6b', fillColor: '#ff6b6b', fillOpacity: 0.3, weight: 2 }}
-                />
-                <Circle
-                  center={[33.7650, -84.3800]}
-                  radius={600}
-                  pathOptions={{ color: '#ff6b6b', fillColor: '#ff6b6b', fillOpacity: 0.3, weight: 2 }}
-                />
-              </>
-            )}
-            {trafficLevel === 'heavy' && (
-              <>
-                <Circle
-                  center={[33.7706, -84.3880]}
-                  radius={600}
-                  pathOptions={{ color: '#ff8787', fillColor: '#ff8787', fillOpacity: 0.25, weight: 2 }}
-                />
-                <Circle
-                  center={[33.7850, -84.3750]}
-                  radius={500}
-                  pathOptions={{ color: '#ff8787', fillColor: '#ff8787', fillOpacity: 0.25, weight: 2 }}
-                />
-              </>
-            )}
-            {trafficLevel === 'moderate' && (
-              <Circle
-                center={[33.7706, -84.3880]}
-                radius={400}
-                pathOptions={{ color: '#ffa94d', fillColor: '#ffa94d', fillOpacity: 0.2, weight: 2 }}
-              />
-            )}
-
             {/* Profile location marker */}
             <Circle
               center={userLocation}
@@ -897,6 +780,27 @@ function App() {
               </React.Fragment>
             ))}
           </MapContainer>
+          
+          {/* Map Legend */}
+          <div className="map-legend">
+            <h4>Map Legend</h4>
+            <div className="legend-item">
+              <span className="legend-marker" style={{ background: '#dc3545' }}></span>
+              <span>Emergency Room (Hospital)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-marker" style={{ background: '#4dabf7' }}></span>
+              <span>Urgent Care Center</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-marker" style={{ background: '#ffd43b' }}></span>
+              <span>Recommended Facility (Gold)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-marker" style={{ background: '#51cf66' }}></span>
+              <span>Your Profile Location</span>
+            </div>
+          </div>
         </section>
 
 
