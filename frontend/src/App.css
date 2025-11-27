@@ -167,6 +167,14 @@
   color: #495057;
 }
 
+.insurance-info .cost-estimate {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255,255,255,0.7);
+  border-radius: 4px;
+  font-size: 1.1rem;
+}
+
 .leaflet-container {
   z-index: 1;
 }

@@ -96,6 +96,11 @@ function App() {
       severityLabel: 'Trimester / Severity',
       hasInsurance: true,
       insuranceType: 'Employer Plan',
+      costEstimates: {
+        'Mild': '$1,787',
+        'Moderate': '$1,787',
+        'Severe': '$1,787 + $1,141 (ambulance cost)'
+      },
       trimesters: {
         'Mild': '1st Trimester - Body stretching, bloating/heartburn → Monitor, call doctor if persists',
         'Moderate': '2nd Trimester - Fever or bleeding → Head to ER for evaluation',
@@ -111,6 +116,11 @@ function App() {
       severityLabel: 'Peak Flow Zone',
       hasInsurance: false,
       insuranceType: 'None',
+      costEstimates: {
+        'Mild': '$100–$400',
+        'Moderate': '$1,500',
+        'Severe': '$1,500 + $1,141 (ambulance cost)'
+      },
       zones: {
         'Mild': 'Green Zone (80-100% PFM) - Symptoms controlled',
         'Moderate': 'Yellow Zone (50-80% PFM) - Symptoms worsening',
@@ -126,6 +136,11 @@ function App() {
       severityLabel: 'Agitation Level',
       hasInsurance: true,
       insuranceType: 'Medicare',
+      costEstimates: {
+        'Mild': '$75',
+        'Moderate': '$1,676',
+        'Severe': '$1,676'
+      },
       levels: {
         'Mild': 'Mild Distress - Slight confusion, mild anxiety',
         'Moderate': 'Moderate Agitation - Increased confusion, restlessness',
@@ -676,11 +691,13 @@ function App() {
                   <div className="insurance-info accepted">
                     <p><strong>Insurance Coverage:</strong> ✓ Yes ({personas[selectedPersona].insuranceType})</p>
                     <p className="insurance-detail">This facility accepts your insurance.</p>
+                    <p className="cost-estimate"><strong>Estimated Cost:</strong> {personas[selectedPersona].costEstimates[severity]}</p>
                   </div>
                 ) : (
                   <div className="insurance-info not-covered">
-                    <p><strong>Insurance Coverage:</strong> ✗ None</p>
-                    <p className="insurance-detail">This persona is uninsured. Ask about payment plans and financial assistance programs.</p>
+                    <p><strong>Insurance Coverage:</strong> ✗ None (Uninsured)</p>
+                    <p className="cost-estimate"><strong>Estimated Cost:</strong> {personas[selectedPersona].costEstimates[severity]}</p>
+                    <p className="insurance-detail">Ask about payment plans and financial assistance programs.</p>
                   </div>
                 )}
                 <p><strong>Traffic Conditions:</strong> <span className={`traffic-${trafficLevel}`}>{trafficLevel.toUpperCase()}</span></p>
