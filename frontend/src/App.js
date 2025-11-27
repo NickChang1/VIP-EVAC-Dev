@@ -90,23 +90,27 @@ function App() {
   const personas = {
     pregnancy: {
       id: 'pregnancy',
-      name: 'Pregnant Woman with Pre-eclampsia Symptoms',
+      name: 'Pregnant Woman with Abdominal Pain',
       age: '25-35',
-      description: 'Late stage pregnancy | Very concerned about pregnancy',
-      severityLabel: 'Condition Severity',
+      description: 'Late stage pregnancy | Experiencing abdominal discomfort',
+      severityLabel: 'Trimester / Severity',
+      hasInsurance: true,
+      insuranceType: 'Employer Plan',
       trimesters: {
-        'Mild': '1st Trimester - Stable BP, mild swelling',
-        'Moderate': '2nd Trimester - Higher BP, headache, vision changes',
-        'Severe': '3rd Trimester - Extreme BP, non-stop headache, seizure risk'
+        'Mild': '1st Trimester - Body stretching, bloating/heartburn → Monitor, call doctor if persists',
+        'Moderate': '2nd Trimester - Fever or bleeding → Head to ER for evaluation',
+        'Severe': '3rd Trimester - Possible sign of labor → Immediate hospital transport'
       },
       riskTolerance: 'very-low'
     },
     asthma: {
       id: 'asthma',
-      name: 'Adult with Asthma Attack',
+      name: 'Asthmatic Adult with Impending Attack',
       age: '30-40',
       description: 'Limited mobility due to shortness of breath | Takes care of elderly parents',
       severityLabel: 'Peak Flow Zone',
+      hasInsurance: false,
+      insuranceType: 'None',
       zones: {
         'Mild': 'Green Zone (80-100% PFM) - Symptoms controlled',
         'Moderate': 'Yellow Zone (50-80% PFM) - Symptoms worsening',
@@ -116,10 +120,12 @@ function App() {
     },
     dementia: {
       id: 'dementia',
-      name: 'Elder with Dementia',
+      name: 'Elder with Dementia (Difficulty Swallowing)',
       age: '75-80',
       description: 'Frail mobility | Has caretaker | Low tech comfort',
       severityLabel: 'Agitation Level',
+      hasInsurance: true,
+      insuranceType: 'Medicare',
       levels: {
         'Mild': 'Mild Distress - Slight confusion, mild anxiety',
         'Moderate': 'Moderate Agitation - Increased confusion, restlessness',
@@ -561,9 +567,9 @@ function App() {
                 }}
                 className="persona-dropdown"
               >
-                <option value="pregnancy">Pregnant Woman with Pre-eclampsia</option>
-                <option value="asthma">Adult with Asthma Attack</option>
-                <option value="dementia">Elder with Dementia</option>
+                <option value="pregnancy">Pregnant Woman with Abdominal Pain</option>
+                <option value="asthma">Asthmatic Adult with Impending Attack</option>
+                <option value="dementia">Elder with Dementia (Difficulty Swallowing)</option>
               </select>
             </div>
 
@@ -666,9 +672,16 @@ function App() {
                 {recommendation.travelTime && (
                   <p><strong>Travel Time:</strong> {recommendation.travelTime.time} min ({recommendation.travelTime.distance} miles)</p>
                 )}
-                <p><strong>Insurance Accepted:</strong> {recommendation.facility.insurance?.join(', ')}</p>
-                {recommendation.facility.insurance && (
-                  <p className="insurance-note">💡 <em>This facility accepts {recommendation.facility.insurance.length === 1 && recommendation.facility.insurance[0] === 'All' ? 'all insurance plans' : 'most major insurance plans'}. Call ahead to confirm your specific coverage.</em></p>
+                {personas[selectedPersona].hasInsurance ? (
+                  <div className="insurance-info accepted">
+                    <p><strong>Insurance Coverage:</strong> ✓ Yes ({personas[selectedPersona].insuranceType})</p>
+                    <p className="insurance-detail">This facility accepts your insurance.</p>
+                  </div>
+                ) : (
+                  <div className="insurance-info not-covered">
+                    <p><strong>Insurance Coverage:</strong> ✗ None</p>
+                    <p className="insurance-detail">This persona is uninsured. Ask about payment plans and financial assistance programs.</p>
+                  </div>
                 )}
                 <p><strong>Traffic Conditions:</strong> <span className={`traffic-${trafficLevel}`}>{trafficLevel.toUpperCase()}</span></p>
               </div>
@@ -780,10 +793,11 @@ function App() {
               </React.Fragment>
             ))}
           </MapContainer>
-          
-          {/* Map Legend */}
-          <div className="map-legend">
-            <h4>Map Legend</h4>
+        </section>
+
+        <section className="info-card">
+          <h3>Map Legend</h3>
+          <div className="legend-grid">
             <div className="legend-item">
               <span className="legend-marker" style={{ background: '#dc3545' }}></span>
               <span>Emergency Room (Hospital)</span>
